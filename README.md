@@ -6,7 +6,7 @@
 
 This blog is written by **Neovim** and **Visual Studio Code**. You may need to clone this repository to your local and use **Visual Studio Code** to read. ***Markdown Preview Enhanced*** plugin is necessary as well. Codes are all writen with **Python**.
 
-This repository contains (PyTorch) code and pre-trained models for Biomedical Named Entity Recognition task, described by the paper: [*A Neural Framework for Chinese Medical Named Entity Recognition*](https://link.springer.com/chapter/10.1007/978-3-030-59605-7_6). This code is also the implementationt of my B.S. thesis: *基于神经网络的中文电子病历命名实体识别*.
+This repository contains (PyTorch) code and pre-trained models for Biomedical Named Entity Recognition task, described by the paper: [*A Neural Framework for Chinese Medical Named Entity Recognition*](https://link.springer.com/chapter/10.1007/978-3-030-59605-7_6). This code is also the implementation of my B.S. thesis: *基于神经网络的中文电子病历命名实体识别*.
 
 ## Quick links
 
