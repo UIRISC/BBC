@@ -1,7 +1,7 @@
 # Author: StevenChaoo
 # -*- coding:UTF-8 -*-
-
-
+import argparse
+import json
 import pickle
 import codecs
 import copy
@@ -11,6 +11,7 @@ import torch.optim as optim
 
 from util import tools
 
+import logging
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -76,7 +77,7 @@ class Data_preprocess():
         target = []
 
         # Load data from self.data_path
-        with codecs.open(self.data_path, 'r') as f:
+        with codecs.open(self.data_path, 'r', encoding="utf-8") as f:
             lines = f.readlines()
             for line in lines:
                 line = line.strip()
@@ -185,9 +186,23 @@ class Data_preprocess():
 
 
 class BiLSTM_CRF(nn.Module):
+    START_TAG = "<START>"
+    STOP_TAG = "<STOP>"
+    BATCH_SIZE= 128
+    EMBEDDING_SIZE = 100
+    HIDDEN_SIZE = 128
+    DROPOUT = 1.0
+
     def __init__(self, vocab_size, tag_to_ix,
                  embedding_dim=100, hidden_dim=128,
                  batch_size=64):
+        START_TAG = "<START>"
+        STOP_TAG = "<STOP>"
+        BATCH_SIZE = 128
+        EMBEDDING_SIZE = 100
+        HIDDEN_SIZE = 128
+        DROPOUT = 1.0
+
         super(BiLSTM_CRF, self).__init__()
         # Hyper-parameters
         self.vocab_size = vocab_size
@@ -216,7 +231,7 @@ class BiLSTM_CRF(nn.Module):
         # Initialize hidden layer
         self.hidden = self.init_hidden()
 
-    def log_sum_exp(vec):
+    def log_sum_exp(self, vec):
         '''
         Official document
         '''
@@ -232,8 +247,8 @@ class BiLSTM_CRF(nn.Module):
         '''
         Initialize hidden layer
         '''
-        return (torch.randn(2, self.batch_size, self.hidden_dim//2).cuda(),
-                torch.randn(2, self.batch_size, self.hidden_dim//2).cuda())
+        return (torch.randn(2, self.batch_size, self.hidden_dim//2),
+                torch.randn(2, self.batch_size, self.hidden_dim//2))
 
     def _get_lstm_features(self, sentence):
         '''
@@ -252,7 +267,14 @@ class BiLSTM_CRF(nn.Module):
         '''
         Official document
         '''
-        previous = torch.full((1, self.tagset_size), 0).cuda()
+        START_TAG = "<START>"
+        STOP_TAG = "<STOP>"
+        BATCH_SIZE = 128
+        EMBEDDING_SIZE = 100
+        HIDDEN_SIZE = 128
+        DROPOUT = 1.0
+
+        previous = torch.full((1, self.tagset_size), 0)
         for index in range(len(emissions)):
             previous = torch.transpose(previous.expand(
                 self.tagset_size, self.tagset_size), 0, 1)
@@ -269,11 +291,18 @@ class BiLSTM_CRF(nn.Module):
         '''
         Official document
         '''
+        START_TAG = "<START>"
+        STOP_TAG = "<STOP>"
+        BATCH_SIZE = 128
+        EMBEDDING_SIZE = 100
+        HIDDEN_SIZE = 128
+        DROPOUT = 1.0
+
         # Gives the score of a provided tag sequence
         # Score = Emission_Score + Transition_Score
-        score = torch.zeros(1).cuda()
+        score = torch.zeros(1)
         tags = torch.cat(
-            [torch.tensor([self.tag_to_ix[START_TAG]], dtype=torch.long).cuda(), tags])
+            [torch.tensor([self.tag_to_ix[START_TAG]], dtype=torch.long), tags])
         for i, emission in enumerate(emissions):
             score += self.transitions[tags[i], tags[i+1]] + emission[tags[i+1]]
         score += self.transitions[tags[-1], self.tag_to_ix[STOP_TAG]]
@@ -285,8 +314,8 @@ class BiLSTM_CRF(nn.Module):
         '''
         self.batch_size = sentences.size(0)
         emissions = self._get_lstm_features(sentences)
-        gold_score = torch.zeros(1).cuda()
-        total_score = torch.zeros(1).cuda()
+        gold_score = torch.zeros(1)
+        total_score = torch.zeros(1)
         for emission, tag, len in zip(emissions, tags, length):
             emission = emission[:len]
             tag = tag[:len]
@@ -298,8 +327,8 @@ class BiLSTM_CRF(nn.Module):
         '''
         Official document
         '''
-        trellis = torch.zeros(emissions.size()).cuda()
-        backpointers = torch.zeros(emissions.size(), dtype=torch.long).cuda()
+        trellis = torch.zeros(emissions.size())
+        backpointers = torch.zeros(emissions.size(), dtype=torch.long)
         trellis[0] = emissions[0]
         for t in range(1, len(emissions)):
             v = trellis[t -
@@ -318,7 +347,7 @@ class BiLSTM_CRF(nn.Module):
         '''
         Official document
         '''
-        sentence = torch.tensor(sentences, dtype=torch.long).cuda()
+        sentence = torch.tensor(sentences, dtype=torch.long)
         if not lengths:
             lengths = [sen.size(-1) for sen in sentence]
         self.batch_size = sentence.size(0)
@@ -334,7 +363,21 @@ class BiLSTM_CRF(nn.Module):
 
 
 class ChineseNER():
+    START_TAG = "<START>"
+    STOP_TAG = "<STOP>"
+    BATCH_SIZE= 128
+    EMBEDDING_SIZE = 100
+    HIDDEN_SIZE = 128
+    DROPOUT = 1.0
+
     def __init__(self):
+        START_TAG = "<START>"
+        STOP_TAG = "<STOP>"
+        BATCH_SIZE = 128
+        EMBEDDING_SIZE = 100
+        HIDDEN_SIZE = 128
+        DROPOUT = 1.0
+
         # Set training data
         self.train_manager = Data_preprocess(batch_size=BATCH_SIZE)
 
@@ -367,7 +410,7 @@ class ChineseNER():
             hidden_dim=HIDDEN_SIZE,
             batch_size=BATCH_SIZE
         )
-        self.model.cuda()
+        self.model
 
     def save_params(self, data):
         '''
@@ -423,9 +466,9 @@ class ChineseNER():
                 # Transfer sentence, tag, and length to tensor type
                 sentences, tags, length = zip(*batch)
                 sentences_tensor = torch.tensor(
-                    sentences, dtype=torch.long).cuda()
-                tags_tensor = torch.tensor(tags, dtype=torch.long).cuda()
-                length_tensor = torch.tensor(length, dtype=torch.long).cuda()
+                    sentences, dtype=torch.long)
+                tags_tensor = torch.tensor(tags, dtype=torch.long)
+                length_tensor = torch.tensor(length, dtype=torch.long)
 
                 # Define loss function
                 loss = self.model.neg_log_likelihood(sentences_tensor,
@@ -462,7 +505,7 @@ class ChineseNER():
         # Calculate f1 score
         pre, cal, f1 = tools.f1_score(tags, paths, lengths)
         logger.info(
-            "Precision: {.2f}, Recall: {.2f}, F1 Score: {.2f}".format(pre, cal, f1))
+            "Precision: {:.2f}, Recall: {:.2f}, F1 Score: {:.2f}".format(pre, cal, f1))
 
 
 def dataPreparation():
@@ -482,9 +525,9 @@ def dataPreparation():
     raw_data_list = json.load(raw_data_file)
 
     # Prepare training / test data
-    train_data = open("{}/train.txt".format(args.raw_data_dir), "w")
-    dev_data = open("{}/dev.txt".format(args.raw_data_dir), "w")
-    test_data = open("{}/test.txt".format(args.raw_data_dir), "w")
+    train_data = open("{}/train.txt".format(args.raw_data_dir), "w", encoding="utf-8")
+    dev_data = open("{}/dev.txt".format(args.raw_data_dir), "w", encoding="utf-8")
+    test_data = open("{}/test.txt".format(args.raw_data_dir), "w", encoding="utf-8")
 
     # 1-700 for train.txt, 701-800 for dev.txt, 801-1000 for test.txt
     count = 0
@@ -522,7 +565,7 @@ def main():
     # Hyper-parameters
     START_TAG = "<START>"
     STOP_TAG = "<STOP>"
-    BATCH_SIZE = 128
+    BATCH_SIZE= 128
     EMBEDDING_SIZE = 100
     HIDDEN_SIZE = 128
     DROPOUT = 1.0

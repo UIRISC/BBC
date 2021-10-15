@@ -159,9 +159,12 @@ def f1_score(true_path, predict_path, lengths):
         batch_TP_FP += TP_FP
         batch_TP_FN += TP_FN
         batch_TP += TP
-    precision = batch_TP / batch_TP_FP
-    recall = batch_TP / batch_TP_FN
-    f1 = 2 * precision * recall / (precision + recall + 1)
+    precision = batch_TP / (batch_TP_FP + 1)
+    recall = batch_TP / (batch_TP_FN + 1)
+    if (precision + recall) == 0:
+        print("error")
+    else:
+        f1 = 2 * precision * recall / (precision + recall)
 
     # Print results
     results = (f'precision: {precision:.2f}, '
